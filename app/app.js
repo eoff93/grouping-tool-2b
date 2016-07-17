@@ -1,17 +1,29 @@
 angular.module('groupApp', ['checklist-model'])
-.factory('getData', function() {
+.factory('getData', function($http) {
   return {
-    groups: [],
-    sites: []
+    get: function() {
+      return $http({
+        url: 'data/site-data.json',
+        method: 'GET'
+      })
+    }
   }
+
 })
 .controller('MainController', function(getData) {
   // Initial variables
   var vm = this;
+  vm.data = [];
+  vm.sites = [];
+  vm.groups = [];
+
+  getData.get().success(function(data) {
+    vm.data = data;
+    vm.sites = data.sites;
+    vm.groups = data.groups;
+  });
+
   vm.showJson = false;
-  vm.data = getData;
-  vm.sites = vm.data.sites;
-  vm.groups = vm.data.groups;
   vm.dataToShow = {id: 2, value:10};
   vm.dataToShowOptions = [{id:1, value: 5}, {id:2, value:10}, {id: 3, value:20},
                           {id:4, value:50}, {id:5, value:100}];
