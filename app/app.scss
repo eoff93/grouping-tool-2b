@@ -1,0 +1,54 @@
+body {
+  padding-top: 50px;
+}
+a:link {
+text-decoration: none;
+}
+
+a:visited {
+text-decoration: none;
+}
+
+/*
+  =====================================
+  List of groups
+  =====================================
+*/
+
+#groups {
+  button {
+    border: 0;
+    border-right: 1px solid lightgray;
+  }
+
+  .badge-alt {
+    color: #fff;
+    background-color: #337AB7;
+  }
+  .current-group {
+      background-color: #fff;
+      border: 1px solid lightgray;
+      border-right: 0;
+      color: #333;
+  }
+
+  .glyphicon-plus {
+    color: #337ab7;
+  }
+}
+
+
+/*
+  =====================================
+  Modals
+  =====================================
+*/
+
+.modal {
+  h4 {
+    font-weight: 700;
+  }
+  label {
+    font-weight: 400;
+  }
+}

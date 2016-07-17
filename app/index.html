@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html lang="en" ng-app="groupApp" class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html lang="en" ng-app="groupApp" class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html lang="en" ng-app="groupApp" class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en" ng-app="groupApp" class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Website Grouping Tool</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="bower_components/html5-boilerplate/dist/css/normalize.css">
+  <link rel="stylesheet" href="bower_components/html5-boilerplate/dist/css/main.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="app.css">
+  <script src="bower_components/html5-boilerplate/dist/js/vendor/modernizr-2.8.3.min.js"></script>
+</head>
+<body ng-controller="MainController as main">
+
+  <main class="container">
+    <div class="row">
+      <!-- Add website and add group buttons -->
+      <section class="col-sm-3 controls">
+        <div class="well">
+          <button type="button" class="btn btn-primary btn-block" data-toggle="modal" data-target="#website-modal">
+            Add site
+          </button>
+          <button class="btn btn-primary btn-block" data-toggle="modal" data-target="#group-modal">
+            Add group
+          </button>
+          <button class="btn btn-info btn-block" ng-click="main.toggleShowJson()">
+            Show JSON
+          </button>
+        </div>
+      </section>
+
+      <!-- Group list -->
+      <section class="col-sm-4" id="groups">
+        <div class="list-group">
+
+          <!-- All websites button -->
+          <button type="button" class="list-group-item active" ng-click="main.setCurrentGroup(null)">
+            All websites <span class="badge">{{main.sites.length}}</span>
+          </button>
+
+          <!-- Ungrouped websites button -->
+          <button type="button" class="list-group-item" ng-click="main.setCurrentGroup('ungrouped')" ng-class="{'current-group':main.isCurrentGroup('ungrouped')}">
+            Ungrouped websites
+            <span class="badge badge-alt">{{main.getUngroupedSites()}}</span>
+          </button>
+
+          <!-- Group buttons -->
+          <div ng-repeat="group in main.groups | filter:{sites: search} | limitTo:10 track by group.id">
+            <button type="button" class="list-group-item" ng-click="main.setCurrentGroup(group)" ng-class="{'current-group':main.isCurrentGroup(group)}">
+
+              {{group.name}}
+              <!-- Group edit and delete section -->
+              <section class="group-controls pull-right">
+                <a href="#" ng-click="main.setEditedGroup(group)" data-toggle="modal" data-target="#edit-group-modal">
+                  <span class="glyphicon glyphicon-edit" style="color: #EC971F" aria-hidden="true"></span>
+                </a>
+                <a href="#" ng-click="main.deleteGroup(group)">
+                  <span class="glyphicon glyphicon-remove" style="color: #C9302C" aria-hidden="true"></span>
+                </a>
+                <span class="badge badge-alt">{{group.sites.length || 0}}</span>
+              </section>
+            </button>
+          </div>
+
+          <button type="button" class="list-group-item" data-toggle="modal" data-target="#website-modal">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add website
+          </button>
+        </div> <!-- .list-group -->
+      </section> <!-- .groups -->
+
+      <!-- Website list -->
+      <section class="col-sm-5">
+
+        <!-- Shows up when there are no sites -->
+        <div class="well" ng-hide="main.sites.length">
+          You have no websites.
+          <button class="btn btn-primary" data-toggle="modal" data-target="#website-modal">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add one now!
+          </button>
+        </div>
+
+        <!-- Search and select form -->
+        <section class="row" ng-show="main.sites.length">
+          <div class="col-sm-12">
+            <form class="form-inline">
+              <input type="text" class="form-control" placeholder="Search" ng-model="search">
+              <select
+                name="howManyRows" id="howManyRows"
+                class="form-control pull-right"
+                ng-options="option.value for option in main.dataToShowOptions track by option.id"
+                ng-model="main.dataToShow"></select>
+            </form>
+          </div>
+        </section>
+
+        <br>
+
+        <!-- Main table -->
+        <table
+          class="table table-bordered"
+          ng-show="main.currentGroup.sites.length"
+          ng-hide="main.sites.length === 0 || main.isCurrentGroup('ungrouped')"
+          >
+          <tr>
+            <th scope="col"> ID </th>
+            <th scope="col"> Url </th>
+            <th scope="col"> Color </th>
+            <th class="text-center" scope="col" colspan="2">Action</th>
+          </tr>
+          <tr ng-repeat="site in main.sites | filter:{groups:main.currentGroup.name} |
+                         filter:{url: search} | limitTo:main.dataToShow.value track by site.id"
+          >
+            <!-- Table data -->
+            <td> {{$index + 1}} </td>
+            <td>
+              <a href="{{site.url}}" target="_blank">
+                {{site.url}}
+              </a>
+            </td>
+            <td> {{site.color || "none"}} </td>
+            <td>
+              <a href="#" ng-click="main.setEditedSite(site)" data-toggle="modal" data-target="#edit-website-modal">
+                Edit
+              </a>
+            </td>
+            <td>
+              <a href="#" ng-click="main.deleteSite(site)">
+                Delete
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Ungrouped table -->
+        <table
+          class="table table-bordered"
+          ng-show="main.isCurrentGroup('ungrouped') && main.getUngroupedSites()"
+          ng-hide="!main.isCurrentGroup('ungrouped') ||
+                             main.sites.length === 0"
+          >
+          <tr>
+            <th scope="col"> ID </th>
+            <th scope="col"> Url </th>
+            <th scope="col"> Color </th>
+            <th class="text-center" scope="col" colspan="2">Action</th>
+          </tr>
+
+          <tr ng-repeat="site in main.sites |
+                   filter:main.byEmptyGroup |
+                   filter:search            |
+                   limitTo:main.dataToShow.value track by site.id"
+          >
+            <!-- Table data -->
+            <td> {{$index + 1}} </td>
+            <td>
+              <a href="{{site.url}}" target="_blank">
+                {{site.url}}
+              </a>
+            </td>
+            <td> {{site.color || "none"}} </td>
+            <td>
+              <a href="#" ng-click="main.setEditedSite(site)" data-toggle="modal" data-target="#edit-website-modal">
+                Edit
+              </a>
+            </td>
+            <td>
+              <a href="#" ng-click="main.deleteSite(site)">
+                Delete
+              </a>
+            </td>
+          </tr>
+        </table>
+      </section> <!-- .col-sm-5 -->
+    </div> <!-- .row -->
+  </main>
+
+<!-- Add website modal -->
+<div class="modal fade" id="website-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Add site</h4>
+      </div>
+      <div class="modal-body">
+
+        <!-- Website URL form -->
+        <form class="form-horizontal" ng-submit="main.createSite(main.newSite)">
+          <div class="form-group">
+            <label for="website-url" class="col-sm-2 control-label">Site URL</label>
+            <div class="col-sm-10">
+              <input ng-model="main.newSite.url" type="text" class="form-control" id="website-url" required>
+            </div>
+          </div>
+
+          <!-- Website color form -->
+          <div class="form-group">
+            <label for="website-color" class="col-sm-2 control-label">Site color</label>
+            <div class="col-sm-10">
+              <select ng-model="main.newSite.color" name="selectColor" id="selectColor" class="form-control">
+                <option value="">- None -</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+                <option value="orange">Orange</option>
+              </select>
+            </div>
+          </div>
+          <!-- Website group form -->
+          <div class="form-group" ng-show="main.groups.length">
+            <label for="pick-group" class="col-sm-2 control-label">Groups</label>
+            <div class="col-sm-10" id="pick-group">
+
+              <div ng-repeat="group in main.groups track by group.id">
+                <div class="checkbox">
+                  <label>
+                    <input
+                    type="checkbox"
+                    checklist-model="main.newSite.groups"
+                    checklist-value="group.name"
+                    >
+                    {{ group.name }}
+                  </label>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Edit website modal -->
+<div class="modal fade" id="edit-website-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Edit site: {{main.editedSite.url}}</h4>
+      </div>
+      <div class="modal-body">
+        <!-- Website URL form -->
+        <form class="form-horizontal" ng-submit="main.updateSite(main.editedSite)">
+          <div class="form-group">
+            <label for="website-url" class="col-sm-2 control-label">Site URL</label>
+            <div class="col-sm-10">
+              <input ng-model="main.editedSite.url" type="text" class="form-control" id="website-url" required>
+            </div>
+          </div>
+          <!-- Website color form -->
+          <div class="form-group">
+            <label for="website-color" class="col-sm-2 control-label">Site color</label>
+            <div class="col-sm-10">
+              <select ng-model="main.editedSite.color" name="selectColor" id="selectColor" class="form-control">
+                <option value="">- None -</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+                <option value="orange">Orange</option>
+              </select>
+            </div>
+          </div>
+          {{main.editedSite}}
+          <!-- Website group form -->
+          <div class="form-group" ng-show="main.groups.length">
+            <label for="pick-group" class="col-sm-2 control-label">Groups</label>
+            <div class="col-sm-10" id="pick-group">
+
+              <div ng-repeat="group in main.groups track by group.id">
+                <div class="checkbox">
+                  <label>
+                    <input
+                    type="checkbox"
+                    checklist-model="main.editedSite.groups"
+                    checklist-value="group.name"
+                    >
+                    {{ group.name }}
+                  </label>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Add group modal -->
+<div class="modal fade" id="group-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Add group</h4>
+      </div>
+      <div class="modal-body">
+
+        <form class="form-horizontal" ng-submit="main.createGroup(main.newGroup)">
+
+          <!-- Group name form -->
+          <div class="form-group">
+            <label for="group-name" class="col-sm-3 control-label">Group name</label>
+            <div class="col-sm-9">
+              <input ng-model="main.newGroup.name" type="text" class="form-control" id="group-name" required>
+            </div>
+          </div>
+
+          <!-- Group color form -->
+          <div class="form-group">
+            <label for="group-color" class="col-sm-3 control-label">Group color</label>
+            <div class="col-sm-9">
+              <select name="selectColor" id="selectColor" class="form-control" ng-model="main.newGroup.color">
+                <option value="">- None -</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+                <option value="orange">Orange</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit group modal -->
+<div class="modal fade" id="edit-group-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Edit group: {{main.editedGroup.name}}</h4>
+      </div>
+      <div class="modal-body">
+
+        <form class="form-horizontal" ng-submit="main.updateGroup(main.editedGroup)">
+          {{main.groupOldName}}
+          <!-- Group name form -->
+          <div class="form-group">
+            <label for="group-name" class="col-sm-3 control-label">Group name</label>
+            <div class="col-sm-9">
+              <input ng-model="main.editedGroup.name" type="text" class="form-control" id="group-name" required>
+            </div>
+          </div>
+
+          <!-- Group color form -->
+          <div class="form-group">
+            <label for="group-color" class="col-sm-3 control-label">Group color</label>
+            <div class="col-sm-9">
+              <select name="selectColor" id="selectColor" class="form-control" ng-model="main.editedGroup.color">
+                <option value="">- None -</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+                <option value="orange">Orange</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container json" ng-if="main.showJson">
+  <div class="row">
+    <div class="col-sm-3 col-sm-offset-2">
+      Sites
+      <pre>{{main.sites | json}}</pre>
+    </div>
+    <div class="col-sm-3">
+      Groups
+      <pre>{{main.groups | json}}</pre>
+    </div>
+  </div>
+</div>
+<!--[if lt IE 7]>
+<p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+
+<!-- In production use:
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/x.x.x/angular.min.js"></script>
+-->
+<script src="bower_components/angular/angular.js"></script>
+<script src="bower_components/angular-route/angular-route.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.4.min.js"   integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="   crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+<script src="app.js"></script>
+<script src="checklist-model.js"></script>
+</body>
+</html>
