@@ -6,7 +6,7 @@ A website grouping tool built with AngularJS, Bootstrap and [checklist-model](ht
 
 ## Installation
 
-`git clone https://github.com/eoff93/grouping-tool-2.git`
+`git clone https://github.com/eoff93/grouping-tool-2b.git`
 
 `cd` to cloned directory
 
